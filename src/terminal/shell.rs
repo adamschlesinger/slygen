@@ -6,7 +6,7 @@ use std::process::Command;
 #[macro_export]
 macro_rules! sh {
     ($arg:expr) => {
-        $crate::shell::__sh(format!($arg))
+        $crate::terminal::shell::__sh(format!($arg))
     };
 }
 
@@ -14,7 +14,7 @@ macro_rules! sh {
 #[macro_export]
 macro_rules! sh_exit {
     ($arg:expr) => {
-        $crate::shell::__sh(format!($arg))
+        $crate::terminal::shell::__sh(format!($arg))
             .unwrap_or_else(|err| std::process::exit(err.code))
     };
 }

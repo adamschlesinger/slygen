@@ -10,7 +10,7 @@ use serde_json::json;
 
 use slygen::{cwd, generate_cli, generate_main, load_content};
 
-mod shell;
+mod terminal;
 
 #[derive(Parser, Debug, Serialize, Deserialize)]
 #[command(author, version, about, long_about = None)]
