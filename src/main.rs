@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use slygen::{cwd, generate_cli, generate_main, load_content};
+use crate::terminal::logger;
+use crate::terminal::logger::LogLevel;
 
 mod terminal;
 
@@ -28,23 +30,38 @@ struct Cli {
     /// Build and install to PATH (NYI)
     #[arg(long)]
     install: bool,
+
+    /// Log debug messages
+    #[arg(short, long, value_enum, default_value_t = LogLevel::Info)]
+    log_level: LogLevel,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
-    let out_path = format!("{}/{}", cli.output.unwrap_or(cwd()?), cli.name);
+    logger::init(cli.log_level);
 
-    let oas = load_content(&cli.spec).await?;
+    header!("slygen");
+
+    let out_path = format!("{}/{}", cli.output.unwrap_or(cwd()?), cli.name);
+    debug!("Creating output path: {out_path}");
     fs::create_dir_all(&out_path)?;
+
+    info!("Getting spec from {}", cli.spec);
+    let oas = load_content(&cli.spec).await?;
+
+    debug!("Writing out: {out_path}");
     fs::write(format!("{out_path}/spec.json"), oas)?; // todo - yaml support
 
     // todo - can we avoid outsourcing to the OAG CLI?
+    info!("Building spec to rust lib");
     sh!("openapi-generator generate -i {out_path}/spec.json -g rust -o {out_path}/openapi")?;
+
+    info!("Generating CLI files");
     generate_cli(&out_path)?;
     generate_main(&out_path)?;
 
-    // fill out templates and copy over
+    info!("Generating Cargo.toml and README.md");
     let data = json!({"name": cli.name});
     let handlebars = Handlebars::new();
     let entries = fs::read_dir("res")?;
